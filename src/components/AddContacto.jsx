@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-  
+import { agendaService } from '../services/agendaService'
 
 export const AddContacto = () => {
   const [formData, setFormData] = useState({
@@ -7,18 +7,38 @@ export const AddContacto = () => {
     apellido: '',
     telefono: ''
   })
+  const [contacts, setContacts] = useState([])
+  const [searchText, setSearchText] = useState('')
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle form submission logic here
+    try {
+      await agendaService.createContact(formData)
+      fetchContacts()
+      setFormData({ nombre: '', apellido: '', telefono: '' })
+    } catch (error) {
+      console.error('Error adding contact:', error)
+    }
   }
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    })
+  const fetchContacts = async () => {
+    try {
+      const data = await agendaService.getContacts()
+      setContacts(data)
+    } catch (error) {
+      console.error('Error fetching contacts:', error)
+    }
   }
+
+  const handleSearch = (e) => {
+    setSearchText(e.target.value.toLowerCase())
+  }
+
+  const filteredContacts = contacts.filter(contact => 
+    `${contact.nombre} ${contact.apellido} ${contact.telefono}`
+      .toLowerCase()
+      .includes(searchText)
+  )
 
   return (
     <div className="container">
@@ -26,7 +46,6 @@ export const AddContacto = () => {
 
       <div className="addContactSection">
         <h2>Agregar Nuevo Contacto</h2>
-        
         <form onSubmit={handleSubmit}>
           <label htmlFor="nombre">Nombre:</label>
           <input 
@@ -34,7 +53,7 @@ export const AddContacto = () => {
             id="nombre" 
             name="nombre"
             value={formData.nombre}
-            onChange={handleChange}
+            onChange={(e) => setFormData({...formData, nombre: e.target.value})}
             required 
           />
 
@@ -44,7 +63,7 @@ export const AddContacto = () => {
             id="apellido" 
             name="apellido"
             value={formData.apellido}
-            onChange={handleChange}
+            onChange={(e) => setFormData({...formData, apellido: e.target.value})}
             required 
           />
 
@@ -54,7 +73,7 @@ export const AddContacto = () => {
             id="telefono" 
             name="telefono"
             value={formData.telefono}
-            onChange={handleChange}
+            onChange={(e) => setFormData({...formData, telefono: e.target.value})}
             required 
           />
 
@@ -67,18 +86,18 @@ export const AddContacto = () => {
         type="text" 
         className="searchInput" 
         placeholder="Buscar por nombre, apellido o teléfono"
+        value={searchText}
+        onChange={handleSearch}
       />
-      <button className="searchButton">Buscar</button>
-
-      <button 
-        className="showFormButton" 
-        style={{display: 'none'}}
-      >
-        Agregar Nuevo Contacto
-      </button>
 
       <h2>Lista de Contactos</h2>
-      <ul className="contactList"></ul>
+      <ul className="contactList">
+        {filteredContacts.map((contact, index) => (
+          <li key={index}>
+            {contact.nombre} {contact.apellido} - {contact.telefono}
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
